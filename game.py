@@ -97,6 +97,9 @@ class Obstacle:
     def move(self):
         self.__y += self.__speed
 
+    def check(self):
+        pass
+
 
 class Game:
     def __init__(self):
