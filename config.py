@@ -5,4 +5,3 @@ class Config:
              'orange': (250, 154, 95), 'dark_orange': (173, 90, 37)}
     speed = 5
     fps = 60
-
