@@ -5,5 +5,8 @@
 + press d or -> move to the right
 + avoid crashing on the obstacles
 
+# Run
++ main.py
+
 # UML Diagram
 ![UML Diagram](images/project_uml.png)
