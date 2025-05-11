@@ -8,6 +8,8 @@ from coin import Coin
 import pygame as pg
 import random
 import time
+import pandas as pd
+import os
 
 
 class Game:
@@ -43,6 +45,8 @@ class Game:
         self.start_time = 0
         self.playing_time = 0
 
+        # self.root = None
+
         self.open_screen()
         # self.count_down()
 
@@ -65,7 +69,7 @@ class Game:
                         self.car.move('right')
 
             if not self.game_over:
-                self.playing_time = int((time.time() - self.start_time) * 10)
+                self.playing_time = int(time.time() - self.start_time)
                 self.road.update()
                 self.road.draw()
                 # obstacle
@@ -83,13 +87,7 @@ class Game:
             pg.display.update()
             self.clock.tick(Config.fps)
 
-        # self.playing_time = int((time.time() - self.start_time) * 10) - 40
-        print("obs =", self.obs_collected)
-        print("shield =", self.shield_collected)
-        print("star =", self.star_collected)
-        print("playing time =", self.playing_time)
-        print("coin =", self.coin_collected)
-        print("movement =", self.car.movement)
+        self.save_collected()
 
         pg.quit()
 
@@ -200,9 +198,9 @@ class Game:
         play_text = font.render("PLAY", True, Config.color['BK'])
         play_rect = play_text.get_rect(center=(Config.width // 2, Config.height // 2 + 50))
 
-        # statistic
-        sta_text = font.render("Statistic", True, Config.color['BK'])
-        sta_rect = sta_text.get_rect(center=(Config.width // 2, Config.height // 2 + 150))
+        # main menu
+        main_text = font.render("Main Menu", True, Config.color['BK'])
+        main_rect = main_text.get_rect(center=(Config.width // 2, Config.height // 2 + 150))
 
         waiting = True
         while waiting:
@@ -221,18 +219,18 @@ class Game:
                 if mouse_click:
                     self.count_down()
                     waiting = False
-            # statistic button
-            elif sta_rect.collidepoint(mouse_pos):
-                pg.draw.rect(self.screen, Config.color['dark_orange'], sta_rect.inflate(10, 10))
+            # main menu
+            elif main_rect.collidepoint(mouse_pos):
+                pg.draw.rect(self.screen, Config.color['dark_orange'], main_rect.inflate(10, 10))
                 if mouse_click:
-                    # pass...
+                    pg.quit()
                     waiting = False
             else:
                 pg.draw.rect(self.screen, Config.color['orange'], play_rect.inflate(10, 10))
-                pg.draw.rect(self.screen, Config.color['orange'], sta_rect.inflate(10, 10))
+                pg.draw.rect(self.screen, Config.color['orange'], main_rect.inflate(10, 10))
 
             self.screen.blit(play_text, play_rect)
-            self.screen.blit(sta_text, sta_rect)
+            self.screen.blit(main_text, main_rect)
             pg.display.update()
             self.clock.tick(Config.fps)
 
@@ -267,9 +265,9 @@ class Game:
         restart_rect = restart_text.get_rect(center=(Config.width // 2, Config.height // 2))
         self.screen.blit(restart_text, restart_rect)
 
-        # statistic
-        stat_text = font.render("Statistic", True, Config.color['BK'])
-        stat_rect = stat_text.get_rect(center=(Config.width // 2, Config.height // 2 + 100))
+        # home
+        home_text = font.render("Home", True, Config.color['BK'])
+        home_rect = home_text.get_rect(center=(Config.width // 2, Config.height // 2 + 100))
 
         self.time_display()
         self.coin_display()
@@ -282,7 +280,8 @@ class Game:
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
-                    pg.quit()
+                    waiting = False
+                    self.game_over = True
                 if event.type == pg.MOUSEBUTTONDOWN:
                     mouse_click = True
 
@@ -290,22 +289,26 @@ class Game:
             if restart_rect.collidepoint(mouse_pos):
                 pg.draw.rect(self.screen, Config.color['dark_orange'], restart_rect.inflate(10, 10))
                 if mouse_click:
+                    self.save_collected()
                     self.reset()
                     self.count_down()
                     self.run()
                     waiting = False
-            # statistic button
-            elif stat_rect.collidepoint(mouse_pos):
-                pg.draw.rect(self.screen, Config.color['dark_orange'], stat_rect.inflate(10, 10))
+
+            # home
+            elif home_rect.collidepoint(mouse_pos):
+                pg.draw.rect(self.screen, Config.color['dark_orange'], home_rect.inflate(10, 10))
                 if mouse_click:
-                    # pass...
+                    self.reset()
+                    self.open_screen()
                     waiting = False
+
             else:
                 pg.draw.rect(self.screen, Config.color['orange'], restart_rect.inflate(10, 10))
-                pg.draw.rect(self.screen, Config.color['orange'], stat_rect.inflate(10, 10))
+                pg.draw.rect(self.screen, Config.color['orange'], home_rect.inflate(10, 10))
 
             self.screen.blit(restart_text, restart_rect)
-            self.screen.blit(stat_text, stat_rect)
+            self.screen.blit(home_text, home_rect)
             pg.display.update()
             self.clock.tick(Config.fps)
 
@@ -348,5 +351,27 @@ class Game:
         text_surface = font.render(text, True, (255, 255, 255))
         self.screen.blit(text_surface, (550, 20))
 
+    def save_collected(self):
+        data = {
+            "obstacle": self.obs_collected,
+            "shield": self.shield_collected,
+            "star": self.star_collected,
+            "coins": self.coin_collected,
+            "time": self.playing_time,
+            "movement": self.car.movement,
+        }
+        df = pd.DataFrame([data])
+        file_path = "game_data.csv"
 
-game = Game()
+        if os.path.exists(file_path):
+            df_old = pd.read_csv(file_path, index_col=0)
+            df_combined = pd.concat([df_old, df], ignore_index=True)
+        else:
+            df_combined = df
+
+        df_combined.index += 1
+        df_combined.to_csv(file_path, index=True)
+
+
+if __name__ == "__main__":
+    game = Game()
